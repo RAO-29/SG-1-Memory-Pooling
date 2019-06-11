@@ -1,0 +1,1 @@
+Marcus Pinnecke <pinnecke@iti.cs.uni-magdeburg.de>

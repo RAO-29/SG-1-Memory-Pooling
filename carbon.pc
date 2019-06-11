@@ -1,0 +1,12 @@
+prefix=/usr/local
+exec_prefix=/usr/local
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libcarbon
+Description: A library to operate with CARBON files
+Version: 1.0.0.0
+
+Requires:
+Libs: -L${libdir} -lcarbon
+Cflags: -I${includedir}

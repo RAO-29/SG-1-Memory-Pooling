@@ -1,0 +1,22 @@
+# Lines starting with a '#' symbol are comments.
+#
+# This file shows ownership on maintenance of particular components of libcarbon.
+# The directory root '/' is the repository directory.
+# If not otherwise stated, the alias 'sources' refers to both # 'include' and 'src'; '*.c' and '*.h' are omitted.
+#
+# Ownership is shows by annotating with @user, @group or via an e-mail address. See the end of this file for resolving
+# those aliases.
+#
+
+# Core
+/sources/                                               @pinnecke
+
+# Utilities
+/tools/carbon                                           @pinnecke
+
+# Compression
+/sources/carbon/compressor/carbon-compressor-huffman    @mmmohsen
+
+# User and group alias resolve to the following
+@pinnecke                                               Marcus Pinnecke <pinnecke@ovgu.de>
+@mmmohsen                                               Mahmoud Mohsen <mahmoud.mohsen@ovgu.de>
