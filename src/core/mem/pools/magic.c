@@ -29,91 +29,97 @@ static bool this_reset_counters(struct pool_strategy *self);
 
 void pool_strategy_magic_create(struct pool_strategy *dst)
 {
-        assert(dst);
+    assert(dst);
 
-        dst->_alloc = this_alloc;
-        dst->_realloc = this_realloc;
-        dst->_free = this_free;
-        dst->_gc = this_gc;
-        dst->_update_counters = this_update_counters;
-        dst->_reset_counters = this_reset_counters;
+    dst->_alloc = this_alloc;
+    dst->_realloc = this_realloc;
+    dst->_free = this_free;
+    dst->_gc = this_gc;
+    dst->_update_counters = this_update_counters;
+    dst->_reset_counters = this_reset_counters;
 
-        dst->tag = POOL_IMPL_MAGIC;
-        dst->impl_name = POOL_STRATEGY_MAGIC_NAME;
+    dst->tag = POOL_IMPL_MAGIC;
+    dst->impl_name = POOL_STRATEGY_MAGIC_NAME;
 }
 
 static data_ptr_t this_alloc(struct pool_strategy *self, u64 nbytes)
 {
-        REQUIRE_INSTANCE_OF_THIS()
+    REQUIRE_INSTANCE_OF_THIS()
 
-        void *ptr = malloc(nbytes);
-        assert(ptr);
+    void *ptr = malloc(nbytes);
+    assert(ptr);
 
-        self->counters.num_alloc_calls++;
-        self->counters.num_bytes_allocd += nbytes;
+    self->counters.num_alloc_calls++;
+    self->counters.num_bytes_allocd += nbytes;
 
-        return pool_internal_new(self, ptr, nbytes);
+    return pool_internal_new(self, ptr, nbytes);
 }
 
-static data_ptr_t this_realloc(struct pool_strategy *self, data_ptr_t ptr, u64 nbytes)
-{
-        REQUIRE_INSTANCE_OF_THIS()
+static data_ptr_t this_realloc(struct pool_strategy *self, data_ptr_t ptr, u64 nbytes) {
+    REQUIRE_INSTANCE_OF_THIS()
 
-        void *stored_adr, *new_adr;
+    void *stored_adr, *new_adr;
 
-        struct pool_ptr_info *info = pool_internal_get_info(self, ptr);
+    struct pool_ptr_info *info = pool_internal_get_info(self, ptr);
 
-        self->counters.num_bytes_reallocd = nbytes;
-        self->counters.num_bytes_allocd += ng5_span(info->bytes_total, nbytes);
+    self->counters.num_bytes_reallocd = nbytes;
+    self->counters.num_bytes_allocd += ng5_span(info->bytes_total, nbytes);
 
-        stored_adr = data_ptr_get_pointer(ptr);
-        new_adr = realloc(stored_adr, nbytes);
+    stored_adr = data_ptr_get_pointer(ptr);
+    if ( info->bytes_total < nbytes ) {
+        /* Reallocation is only necessary if the new data in nbytes
+        * is larger than the data that the data-pointer is pointing to,
+         * as given by the meta-information  info->bytes_total; Also,
+         * info->bytes_used <= info->bytes_total holds ,
+         * as explained in the task sheet
+         */
+         new_adr = realloc(stored_adr, nbytes);
 
         if (unlikely(!new_adr)) {
-                error_print(NG5_ERR_REALLOCERR);
+            error_print(NG5_ERR_REALLOCERR);
         } else {
-                data_ptr_update(&ptr, new_adr);
-                data_ptr_update(&info->ptr, new_adr);
-                info->bytes_used = nbytes;
-                info->bytes_total = nbytes;
-                self->counters.num_realloc_calls++;
+            data_ptr_update(&ptr, new_adr);
+            data_ptr_update(&info->ptr, new_adr);
+            info->bytes_used = nbytes;
+            info->bytes_total = nbytes;
+            self->counters.num_realloc_calls++;
         }
-
-        return ptr;
+    }
+    return ptr;
 }
 
 static bool this_free(struct pool_strategy *self, data_ptr_t ptr)
 {
-        REQUIRE_INSTANCE_OF_THIS()
+    REQUIRE_INSTANCE_OF_THIS()
 
-        struct pool_ptr_info *info = pool_internal_get_info(self, ptr);
-        void *adr = data_ptr_get_pointer(ptr);
+    struct pool_ptr_info *info = pool_internal_get_info(self, ptr);
+    void *adr = data_ptr_get_pointer(ptr);
 
-        free (adr);
-        pool_internal_delete(self, ptr);
+    free (adr);
+    pool_internal_delete(self, ptr);
 
-        self->counters.num_free_calls++;
-        self->counters.num_bytes_freed += info->bytes_total;
+    self->counters.num_free_calls++;
+    self->counters.num_bytes_freed += info->bytes_total;
 
-        return true;
+    return true;
 }
 
 static bool this_gc(struct pool_strategy *self)
 {
-        REQUIRE_INSTANCE_OF_THIS()
-        ng5_unused(self);
-        return true;
+    REQUIRE_INSTANCE_OF_THIS()
+    ng5_unused(self);
+    return true;
 }
 
 static bool this_update_counters(struct pool_strategy *self)
 {
-        REQUIRE_INSTANCE_OF_THIS()
-        self->counters.impl_mem_footprint = 0;
-        return true;
+    REQUIRE_INSTANCE_OF_THIS()
+    self->counters.impl_mem_footprint = 0;
+    return true;
 }
 
 static bool this_reset_counters(struct pool_strategy *self)
 {
-        ng5_zero_memory(&self->counters, sizeof(struct pool_counters));
-        return true;
+    ng5_zero_memory(&self->counters, sizeof(struct pool_counters));
+    return true;
 }
